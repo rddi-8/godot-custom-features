@@ -148,6 +148,7 @@ void RenderSceneBuffersRD::cleanup() {
 #endif
 }
 
+//TODO: Add custom stencil and screen distortion buffers 
 void RenderSceneBuffersRD::configure(const RenderSceneBuffersConfiguration *p_config) {
 	RendererRD::TextureStorage *texture_storage = RendererRD::TextureStorage::get_singleton();
 
