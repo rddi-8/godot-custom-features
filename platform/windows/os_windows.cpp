@@ -28,6 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+
 #include "os_windows.h"
 
 #include "display_server_windows.h"
@@ -50,6 +51,8 @@
 #include "servers/audio_server.h"
 #include "servers/rendering/rendering_server_default.h"
 #include "servers/text_server.h"
+
+#include "modules/godot_tracy/profiler.h"
 
 #include <avrt.h>
 #include <bcrypt.h>
@@ -2075,6 +2078,8 @@ void OS_Windows::run() {
 		if (Main::iteration()) {
 			break;
 		}
+		FrameMark;
+		ZoneScoped;
 	}
 
 	main_loop->finalize();
