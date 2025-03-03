@@ -36,6 +36,8 @@
 #include "servers/rendering/shader_language.h"
 #include "servers/rendering/shader_warnings.h"
 
+#include "modules/godot_tracy/profiler.h"
+
 RenderingServer *RenderingServer::singleton = nullptr;
 RenderingServer *(*RenderingServer::create_func)() = nullptr;
 

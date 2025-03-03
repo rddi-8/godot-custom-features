@@ -36,6 +36,8 @@
 #include "core/variant/callable_bind.h"
 #include "core/variant/variant_callable.h"
 
+#include "modules/godot_tracy/profiler.h"
+
 void Callable::call_deferredp(const Variant **p_arguments, int p_argcount) const {
 	MessageQueue::get_singleton()->push_callablep(*this, p_arguments, p_argcount, true);
 }

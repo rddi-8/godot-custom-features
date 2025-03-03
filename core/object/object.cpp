@@ -40,6 +40,8 @@
 #include "core/string/translation_server.h"
 #include "core/variant/typed_array.h"
 
+#include "modules/godot_tracy/profiler.h"
+
 #ifdef DEBUG_ENABLED
 
 struct _ObjectDebugLock {
@@ -774,6 +776,10 @@ void Object::setvar(const Variant &p_key, const Variant &p_value, bool *r_valid)
 }
 
 Variant Object::callv(const StringName &p_method, const Array &p_args) {
+	ZoneScoped;
+	CharString c = String(p_method).utf8();
+	ZoneName(c.ptr(), c.size());
+
 	const Variant **argptrs = nullptr;
 
 	if (p_args.size() > 0) {
@@ -792,6 +798,10 @@ Variant Object::callv(const StringName &p_method, const Array &p_args) {
 }
 
 Variant Object::callp(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
+	ZoneScoped;
+	CharString c = Profiler::stringify_method(p_method, p_args, p_argcount);
+	ZoneName(c.ptr(), c.size());
+
 	r_error.error = Callable::CallError::CALL_OK;
 
 	if (p_method == CoreStringName(free_)) {

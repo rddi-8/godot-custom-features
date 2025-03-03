@@ -59,6 +59,8 @@
 #include "editor/editor_paths.h"
 #endif
 
+#include "modules/godot_tracy/profiler.h"
+
 #include <stdint.h>
 
 ///////////////////////////
@@ -2041,6 +2043,16 @@ void GDScriptInstance::_call_implicit_ready_recursively(GDScript *p_script) {
 }
 
 Variant GDScriptInstance::callp(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
+	ZoneScoped;
+	CharString c;
+	if (script.ptr()->global_name) {
+		c = (String(script.ptr()->global_name) + "::" + String(p_method)).utf8();
+	}
+	else {
+		c = (String(owner->get_class_name()) + "::" + String(p_method)).utf8();
+	}
+	ZoneName(c.ptr(), c.size());
+
 	GDScript *sptr = script.ptr();
 	if (unlikely(p_method == SceneStringName(_ready))) {
 		// Call implicit ready first, including for the super classes recursively.
