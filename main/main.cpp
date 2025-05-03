@@ -4463,38 +4463,52 @@ bool Main::iteration() {
 	NavigationServer3D::get_singleton()->sync();
 
 	for (int iters = 0; iters < advance.physics_steps; ++iters) {
+		uint64_t physics_begin;
 		ZoneScopedN("Main::iteration::PhysicsProcess");
-		if (Input::get_singleton()->is_agile_input_event_flushing()) {
-			Input::get_singleton()->flush_buffered_events();
+		{
+			ZoneScopedN("some flushing whatever");
+			{
+			if (Input::get_singleton()->is_agile_input_event_flushing())
+				Input::get_singleton()->flush_buffered_events();
+			}
+
+			Engine::get_singleton()->_in_physics = true;
+			Engine::get_singleton()->_physics_frames++;
+
+			physics_begin = OS::get_singleton()->get_ticks_usec();
+
+			// Prepare the fixed timestep interpolated nodes BEFORE they are updated
+			// by the physics server, otherwise the current and previous transforms
+			// may be the same, and no interpolation takes place.
+			OS::get_singleton()->get_main_loop()->iteration_prepare();
 		}
 
-		Engine::get_singleton()->_in_physics = true;
-		Engine::get_singleton()->_physics_frames++;
-
-		uint64_t physics_begin = OS::get_singleton()->get_ticks_usec();
-
-		// Prepare the fixed timestep interpolated nodes BEFORE they are updated
-		// by the physics server, otherwise the current and previous transforms
-		// may be the same, and no interpolation takes place.
-		OS::get_singleton()->get_main_loop()->iteration_prepare();
-
 #ifndef _3D_DISABLED
-		PhysicsServer3D::get_singleton()->sync();
-		PhysicsServer3D::get_singleton()->flush_queries();
+		{
+			ZoneScopedN("PS3D syncflush");
+			PhysicsServer3D::get_singleton()->sync();
+			PhysicsServer3D::get_singleton()->flush_queries();
+		}
 #endif // _3D_DISABLED
+		{
+			ZoneScopedN("P2Dsyncflush");
+			PhysicsServer2D::get_singleton()->sync();
+			PhysicsServer2D::get_singleton()->flush_queries();
+		}
 
-		PhysicsServer2D::get_singleton()->sync();
-		PhysicsServer2D::get_singleton()->flush_queries();
+		{
+			ZoneScopedN("smthA");
 
-		if (OS::get_singleton()->get_main_loop()->physics_process(physics_step * time_scale)) {
-#ifndef _3D_DISABLED
-			PhysicsServer3D::get_singleton()->end_sync();
-#endif // _3D_DISABLED
-			PhysicsServer2D::get_singleton()->end_sync();
+			if (OS::get_singleton()->get_main_loop()->physics_process(physics_step * time_scale)) {
+#ifndef 	_3D_DISABLED
+				PhysicsServer3D::get_singleton()->end_sync();
+#endif 		// _3D_DISABLED
+				PhysicsServer2D::get_singleton()->end_sync();
 
-			Engine::get_singleton()->_in_physics = false;
-			exit = true;
-			break;
+				Engine::get_singleton()->_in_physics = false;
+				exit = true;
+				break;
+			}
 		}
 
 		uint64_t navigation_begin = OS::get_singleton()->get_ticks_usec();
@@ -4511,24 +4525,27 @@ bool Main::iteration() {
 
 #ifndef _3D_DISABLED
 		{
-			ZoneScopedN("Main::iteration::PhysicsProcess::Physics3D");
+			ZoneScopedN("Main::iteration::PhysicsProcess::Physics3D Step");
 			PhysicsServer3D::get_singleton()->end_sync();
 			PhysicsServer3D::get_singleton()->step(physics_step * time_scale);
 		}
 #endif // _3D_DISABLED
 		{
-			ZoneScopedN("Main::iteration::PhysicsProcess::Physics2D");
+			ZoneScopedN("Main::iteration::PhysicsProcess::Physics2D Step");
 			PhysicsServer2D::get_singleton()->end_sync();
 			PhysicsServer2D::get_singleton()->step(physics_step * time_scale);
 		}
-		message_queue->flush();
+		{
+			ZoneScopedN("after step");
+			message_queue->flush();
 
-		OS::get_singleton()->get_main_loop()->iteration_end();
+			OS::get_singleton()->get_main_loop()->iteration_end();
 
-		physics_process_ticks = MAX(physics_process_ticks, OS::get_singleton()->get_ticks_usec() - physics_begin); // keep the largest one for reference
-		physics_process_max = MAX(OS::get_singleton()->get_ticks_usec() - physics_begin, physics_process_max);
+			physics_process_ticks = MAX(physics_process_ticks, OS::get_singleton()->get_ticks_usec() - physics_begin); // keep the largest one for reference
+			physics_process_max = MAX(OS::get_singleton()->get_ticks_usec() - physics_begin, physics_process_max);
 
-		Engine::get_singleton()->_in_physics = false;
+			Engine::get_singleton()->_in_physics = false;
+		}
 	}
 
 	if (Input::get_singleton()->is_agile_input_event_flushing()) {

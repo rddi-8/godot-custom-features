@@ -41,6 +41,8 @@
 #include "core/debugger/engine_debugger.h"
 #include "core/os/os.h"
 
+#include "modules/godot_tracy/profiler.h"
+
 #define FLUSH_QUERY_CHECK(m_object) \
 	ERR_FAIL_COND_MSG(m_object->get_space() && flushing_queries, "Can't change this state while flushing queries. Use call_deferred() or set_deferred() to change monitoring state instead.");
 
@@ -1651,6 +1653,7 @@ void GodotPhysicsServer3D::sync() {
 }
 
 void GodotPhysicsServer3D::flush_queries() {
+	ZoneScopedN("gd_flush");
 	if (!active) {
 		return;
 	}
